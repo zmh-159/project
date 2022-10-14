@@ -1,0 +1,53 @@
+server:
+  port: 9002
+
+#线程配置
+thread:
+  corePoolSize: 20
+  maxPoolSize: 40
+  keepAliveSeconds: 300
+  queueCapacity: 50
+
+spring:
+  security:
+    user:
+      name: root
+      password: root
+  #redis配置
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    #redis 数据库索引
+    database: 0
+    jedis:
+      pool:
+        max-active: 10
+        max-wait: 3000
+        max-idle: 10
+        min-idle: 0
+    timeout: 5000
+#UUID redis key
+device:
+  uuid: 1e9f8bb88b774470b2f67c7dbdbc3d68
+  device_id: devices_ids
+#udp配置
+network:
+  #server: 192.168.19.200
+  server: 127.0.0.1
+  #server: 10.240.12.42
+  #服务器静态信息端口
+  staticInfoPort: 6007
+  #服务器动态信息端口
+  dynamicInfoPort: 6008
+  #本地UDP发送端口
+  localPort: 8888
+  #UDP包大小
+  udpPackSize: 60760
+  #TCP包大小
+  tcpPackSize: 60760
+
+pm:
+  http:
+    user: root
+    passwd: root
+

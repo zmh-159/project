@@ -1,0 +1,196 @@
+#测试代码
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+#include "mpi.h"
+
+int main(int argc, char* argv[])
+{
+    int rank, size;
+    double start,end;
+    char sag[100];
+    char get[100];
+    int result = 0;
+    MPI_Status status;
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    int rightrank = (rank + 1) % size;
+    int leftrank = (rank + size-1)%size;
+    MPI_Barrier(MPI_COMM_WORLD);
+    start = MPI_Wtime();
+    for(int i =0;i<100000000;i++)
+    {
+        strcpy(sag,"hello world");
+        MPI_Sendrecv(sag, 1, MPI_CHAR, rightrank,990,
+            get, 1, MPI_CHAR, leftrank,990, MPI_COMM_WORLD,&status);
+	result +=2 ;
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    end = MPI_Wtime();
+    MPI_Finalize();
+    if (rank == 0) {
+    printf("Runtime = %f\n,I'm rank %d", end-start,rank);
+    }
+    return 0;
+}
+
+#编译命令
+mpicc -o test test.c
+mpicxx -o test test.c
+gcc te.c -o te
+#查看队列
+taskset -pc pid
+#运行命令
+nohup taskset -c 0,60 mpirun -np 2 ./test >test.log 2>&1 &
+#实时查看cpu频率
+watch grep \"cpu MHz\" /proc/cpuinfo
+#kill掉带有mpirun关键词的进程
+ps aux | grep mpirun | cut -c 12-16 |xargs kill -9
+#打印对应行的数据
+sed -n '1~3p' 222
+
+#shell脚本自动执行命令
+#!/bin/bash
+for ((i=0; i<=1; i++))
+do
+        for ((j=16; j<=17; j++))
+        do
+                echo $i,$j >> 1.log
+                taskset -c $i,$j mpirun -np 2 ./test >> 1.log
+                if [ $? -ne 1 ]; then
+                        wait
+                fi
+        done
+done
+
+
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+#include "mpi.h"
+#include <stdlib.h>
+#define FILE_PATH "/root/by/rabish.log"
+int main(int argc, char* argv[])
+{
+    int rank, size;
+    double start,end;
+    char *sag;
+    char *get;
+    sag = (char *)malloc( 1073741825 * sizeof(char) );
+    get = (char *)malloc( 1073741825 * sizeof(char) );
+    FILE *pFile = fopen(FILE_PATH,"r");
+    fgets(sag,sizeof(sag),pFile);
+    fclose(pFile);
+    MPI_Status status;
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    int rightrank = (rank + 1) % size;
+    int leftrank = (rank + size-1)%size;
+    MPI_Barrier(MPI_COMM_WORLD);
+    start = MPI_Wtime();
+    for(int i =0;i<=9;i++)
+    {
+        /*printf("%s",sag);*/
+        MPI_Sendrecv(sag, 1, MPI_CHAR, rightrank,990,
+            get, 1, MPI_CHAR, leftrank,990, MPI_COMM_WORLD,&status);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    end = MPI_Wtime();
+    MPI_Finalize();
+    if (rank == 0) {
+    printf("Runtime = %f\n", end-start);
+    }
+    return EXIT_SUCCESS;
+}
+
+#测试虚拟核心
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+#include "mpi.h"
+
+int main(int argc, char* argv[])
+{
+    int rank, size;
+    double start,end;
+    //char sag[100];
+    int result = 0;
+    MPI_Status status;
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    //int rightrank = (rank + 1) % size;
+    //int leftrank = (rank + size-1)%size;
+    MPI_Barrier(MPI_COMM_WORLD);
+    start = MPI_Wtime();
+    for(int i =0;i<2101000000;i++)
+    {
+        //strcpy(sag,"hello world");
+        //MPI_Sendrecv(sag, 1, MPI_CHAR, rightrank,990,
+           // sag, 1, MPI_CHAR, leftrank,990, MPI_COMM_WORLD,&status);
+        result +=i ;
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    end = MPI_Wtime();
+    MPI_Finalize();
+    //if (rank == 0) {
+    printf("Runtime = %f,I'm rank %d\n", end-start,rank);
+    //}
+    return 0;
+}
+
+#一二三级缓存测试
+#include <stdlib.h>  /* malloc, free, rand, system */
+#include <mpi.h>
+int main (int argc, char *argv[])
+{
+     MPI_Status status;
+     // 初始化MPI环境
+     MPI_Init (&argc, &argv);
+     int length = 512*1024;
+     char * buffer,* get;
+     int myrank;
+     int n;
+     int i = 1073741823;//1G数据
+     MPI_Comm_rank (MPI_COMM_WORLD, &myrank);
+     buffer = (char*)malloc(i+1);  // 字符串最后包含 \0
+     get = (char*)malloc(i+1);
+     for(n=0; n<i; n++)//生成随机字符
+     buffer[n] = rand()%26+'a';
+     buffer[i]='\0';
+     while(length <= 2*1024*1024){
+        double start,end;
+        MPI_Barrier(MPI_COMM_WORLD);
+        start = MPI_Wtime();
+        for(int j = 0;j<1000000;j++){
+                if(myrank == 0)
+                {
+                        MPI_Send (buffer, length, MPI_CHAR, 1, 99, MPI_COMM_WORLD);
+                }
+                else{
+                        MPI_Recv (get, length, MPI_CHAR, 0, 99, MPI_COMM_WORLD, &status);
+                        //printf("%s\n",get);
+                }
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+        end = MPI_Wtime();
+        if (myrank == 0) {
+                printf("%d\n",length);
+                printf("Runtime = %f\n", end-start);
+                printf("---------------------------\n");
+        }
+        length+=50000;
+     }
+     free(buffer);
+     free(get);
+     MPI_Finalize ();
+     return 0;
+ }
+
+
+
+
+
+
